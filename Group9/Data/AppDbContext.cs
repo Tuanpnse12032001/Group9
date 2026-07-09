@@ -1,4 +1,4 @@
-﻿using Group9.Models;
+using Group9.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Group9.Data
@@ -13,6 +13,10 @@ namespace Group9.Data
         public DbSet<User> Users { get; set; }
 
         public DbSet<Role> Roles { get; set; }
+
+        public DbSet<Subject> Subjects { get; set; }
+
+        public DbSet<Document> Documents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -65,6 +69,41 @@ namespace Group9.Data
                 entity.HasOne(u => u.Role)
                     .WithMany(r => r.Users)
                     .HasForeignKey(u => u.RoleId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Subject>(entity =>
+            {
+                entity.HasKey(s => s.Id);
+                entity.Property(s => s.SubjectCode).IsRequired().HasMaxLength(20);
+                entity.Property(s => s.SubjectName).IsRequired().HasMaxLength(200);
+                entity.HasIndex(s => s.SubjectCode).IsUnique();
+
+                // Seed some initial subjects
+                entity.HasData(
+                    new Subject { Id = 1, SubjectCode = "PRN231", SubjectName = "Platform Application Development" },
+                    new Subject { Id = 2, SubjectCode = "PRN212", SubjectName = "Basic C# Programming" },
+                    new Subject { Id = 3, SubjectCode = "PRN232", SubjectName = "C# Web Application Development" }
+                );
+            });
+
+            modelBuilder.Entity<Document>(entity =>
+            {
+                entity.HasKey(d => d.Id);
+                entity.Property(d => d.Title).IsRequired().HasMaxLength(200);
+                entity.Property(d => d.Description).HasMaxLength(1000);
+                entity.Property(d => d.FileName).IsRequired().HasMaxLength(255);
+                entity.Property(d => d.StoragePath).IsRequired().HasMaxLength(500);
+                entity.Property(d => d.ContentType).IsRequired().HasMaxLength(100);
+
+                entity.HasOne(d => d.Subject)
+                    .WithMany(s => s.Documents)
+                    .HasForeignKey(d => d.SubjectId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(d => d.UploadedByUser)
+                    .WithMany()
+                    .HasForeignKey(d => d.UploadedByUserId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
         }
