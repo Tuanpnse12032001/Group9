@@ -18,6 +18,10 @@ namespace Group9.Data
 
         public DbSet<Document> Documents { get; set; }
 
+        public DbSet<ChatSession> ChatSessions { get; set; }
+
+        public DbSet<ChatMessage> ChatMessages { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -105,6 +109,34 @@ namespace Group9.Data
                     .WithMany()
                     .HasForeignKey(d => d.UploadedByUserId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<ChatSession>(entity =>
+            {
+                entity.HasKey(cs => cs.Id);
+                entity.Property(cs => cs.Title).IsRequired().HasMaxLength(200);
+
+                entity.HasOne(cs => cs.User)
+                    .WithMany()
+                    .HasForeignKey(cs => cs.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(cs => cs.Document)
+                    .WithMany()
+                    .HasForeignKey(cs => cs.DocumentId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<ChatMessage>(entity =>
+            {
+                entity.HasKey(cm => cm.Id);
+                entity.Property(cm => cm.Sender).IsRequired().HasMaxLength(50);
+                entity.Property(cm => cm.Content).IsRequired();
+
+                entity.HasOne(cm => cm.ChatSession)
+                    .WithMany(cs => cs.Messages)
+                    .HasForeignKey(cm => cm.ChatSessionId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
