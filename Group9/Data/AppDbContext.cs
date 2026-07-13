@@ -10,6 +10,8 @@ namespace Group9.Data
         {
         }
 
+        public DbSet<CloudFile> CloudFiles { get; set; }
+
         public DbSet<User> Users { get; set; }
 
         public DbSet<Role> Roles { get; set; }
@@ -79,26 +81,62 @@ namespace Group9.Data
             modelBuilder.Entity<Subject>(entity =>
             {
                 entity.HasKey(s => s.Id);
-                entity.Property(s => s.SubjectCode).IsRequired().HasMaxLength(20);
-                entity.Property(s => s.SubjectName).IsRequired().HasMaxLength(200);
-                entity.HasIndex(s => s.SubjectCode).IsUnique();
 
-                // Seed some initial subjects
+                entity.Property(s => s.SubjectCode)
+                    .IsRequired()
+                    .HasMaxLength(20);
+
+                entity.Property(s => s.SubjectName)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.HasIndex(s => s.SubjectCode)
+                    .IsUnique();
+
                 entity.HasData(
-                    new Subject { Id = 1, SubjectCode = "PRN231", SubjectName = "Platform Application Development" },
-                    new Subject { Id = 2, SubjectCode = "PRN212", SubjectName = "Basic C# Programming" },
-                    new Subject { Id = 3, SubjectCode = "PRN232", SubjectName = "C# Web Application Development" }
+                    new Subject
+                    {
+                        Id = 1,
+                        SubjectCode = "PRN231",
+                        SubjectName = "Platform Application Development"
+                    },
+                    new Subject
+                    {
+                        Id = 2,
+                        SubjectCode = "PRN212",
+                        SubjectName = "Basic C# Programming"
+                    },
+                    new Subject
+                    {
+                        Id = 3,
+                        SubjectCode = "PRN232",
+                        SubjectName = "C# Web Application Development"
+                    }
                 );
             });
 
             modelBuilder.Entity<Document>(entity =>
             {
                 entity.HasKey(d => d.Id);
-                entity.Property(d => d.Title).IsRequired().HasMaxLength(200);
-                entity.Property(d => d.Description).HasMaxLength(1000);
-                entity.Property(d => d.FileName).IsRequired().HasMaxLength(255);
-                entity.Property(d => d.StoragePath).IsRequired().HasMaxLength(500);
-                entity.Property(d => d.ContentType).IsRequired().HasMaxLength(100);
+
+                entity.Property(d => d.Title)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(d => d.Description)
+                    .HasMaxLength(1000);
+
+                entity.Property(d => d.FileName)
+                    .IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(d => d.StoragePath)
+                    .IsRequired()
+                    .HasMaxLength(500);
+
+                entity.Property(d => d.ContentType)
+                    .IsRequired()
+                    .HasMaxLength(100);
 
                 entity.HasOne(d => d.Subject)
                     .WithMany(s => s.Documents)
@@ -114,7 +152,10 @@ namespace Group9.Data
             modelBuilder.Entity<ChatSession>(entity =>
             {
                 entity.HasKey(cs => cs.Id);
-                entity.Property(cs => cs.Title).IsRequired().HasMaxLength(200);
+
+                entity.Property(cs => cs.Title)
+                    .IsRequired()
+                    .HasMaxLength(200);
 
                 entity.HasOne(cs => cs.User)
                     .WithMany()
@@ -130,12 +171,51 @@ namespace Group9.Data
             modelBuilder.Entity<ChatMessage>(entity =>
             {
                 entity.HasKey(cm => cm.Id);
-                entity.Property(cm => cm.Sender).IsRequired().HasMaxLength(50);
-                entity.Property(cm => cm.Content).IsRequired();
+
+                entity.Property(cm => cm.Sender)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(cm => cm.Content)
+                    .IsRequired();
 
                 entity.HasOne(cm => cm.ChatSession)
                     .WithMany(cs => cs.Messages)
                     .HasForeignKey(cm => cm.ChatSessionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<CloudFile>(entity =>
+            {
+                entity.HasKey(f => f.Id);
+
+                entity.Property(f => f.OriginalFileName)
+                    .IsRequired()
+                    .HasMaxLength(255);
+
+                entity.Property(f => f.PublicId)
+                    .IsRequired()
+                    .HasMaxLength(500);
+
+                entity.Property(f => f.SecureUrl)
+                    .IsRequired()
+                    .HasMaxLength(1000);
+
+                entity.Property(f => f.ResourceType)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(f => f.ContentType)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(f => f.Status)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.HasOne(f => f.User)
+                    .WithMany()
+                    .HasForeignKey(f => f.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }

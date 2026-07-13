@@ -19,6 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<CloudinaryStorageService>();
 builder.Services.AddScoped<IChatbotService, MockChatbotService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"]!;
