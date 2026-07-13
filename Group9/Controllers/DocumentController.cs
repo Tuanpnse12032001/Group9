@@ -30,7 +30,7 @@ namespace Group9.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("create-document")]
         [Authorize(Roles = "Admin")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadDocument([FromForm] UploadDocumentRequest request)
@@ -88,7 +88,7 @@ namespace Group9.Controllers
             return CreatedAtAction(nameof(GetDocumentDetails), new { id = createdDoc.Id }, MapToDocumentResponse(createdDoc));
         }
 
-        [HttpGet]
+        [HttpGet("filter-document")]
         public async Task<IActionResult> GetDocuments([FromQuery] string? search, [FromQuery] int? subjectId)
         {
             var query = _context.Documents
@@ -124,7 +124,7 @@ namespace Group9.Controllers
             return Ok(responseList);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id}/get-document-by-id")]
         public async Task<IActionResult> GetDocumentDetails(int id)
         {
             var document = await _context.Documents
@@ -140,7 +140,7 @@ namespace Group9.Controllers
             return Ok(MapToDocumentResponse(document));
         }
 
-        [HttpGet("{id}/download")]
+        [HttpGet("{id}/download-document")]
         public async Task<IActionResult> DownloadDocument(int id)
         {
             var document = await _context.Documents.FindAsync(id);
@@ -158,7 +158,7 @@ namespace Group9.Controllers
             return File(fileBytes, document.ContentType, document.FileName);
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{id}/edit-document")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateDocument(int id, UpdateDocumentRequest request)
         {
@@ -203,7 +203,7 @@ namespace Group9.Controllers
             return Ok(MapToDocumentResponse(updatedDoc));
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}/delete-document")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteDocument(int id)
         {
