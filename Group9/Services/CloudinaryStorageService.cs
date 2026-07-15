@@ -1,4 +1,4 @@
-﻿using CloudinaryDotNet;
+using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 
 namespace Group9.Services
@@ -59,6 +59,16 @@ namespace Group9.Services
             };
 
             return await _cloudinary.UploadAsync(uploadParams);
+        }
+
+        public async Task<DeletionResult> DeleteFileAsync(string publicId, string resourceType = "raw")
+        {
+            var deletionParams = new DeletionParams(publicId)
+            {
+                ResourceType = resourceType == "image" ? ResourceType.Image : ResourceType.Raw
+            };
+
+            return await _cloudinary.DestroyAsync(deletionParams);
         }
     }
 }
