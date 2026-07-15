@@ -1,0 +1,1130 @@
+@page
+@{
+    ViewData["Title"] = "Trang Chủ - Group9 E-Learning";
+}
+
+<!-- Custom Header Navbar -->
+<header class="glass-card navbar">
+    <div class="brand">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <span>Group9 E-Learning</span>
+    </div>
+    <div class="nav-actions">
+        <!-- Swagger Quick Link -->
+        <a href="/swagger" target="_blank" class="btn btn-secondary">
+            <i class="fa-solid fa-code"></i> API Swagger
+        </a>
+
+        <!-- Auth Status Controls -->
+        <div id="auth-section">
+            <button class="btn btn-primary" onclick="openAuthModal()">
+                <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Main Grid Dashboard -->
+<main class="dashboard-grid">
+    <!-- Right Column: Document Center (Full Width) -->
+    <section class="glass-card document-panel">
+        <div class="doc-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h3><i class="fa-solid fa-folder-open" style="color: var(--primary);"></i> Kho Tài Liệu Học Tập</h3>
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <!-- Add Subject Button (Admin only) -->
+                    <button id="add-subject-trigger" class="btn btn-secondary" style="display: none;" onclick="openSubjectModal()">
+                        <i class="fa-solid fa-folder-plus"></i> Thêm môn học
+                    </button>
+                    <!-- Add Document Button (Admin only) -->
+                    <button id="add-doc-trigger" class="btn btn-primary" style="display: none;" onclick="openUploadModal()">
+                        <i class="fa-solid fa-file-upload"></i> Đăng tài liệu
+                    </button>
+                </div>
+            </div>
+            <div class="doc-filters">
+                <!-- Subject Tabs -->
+                <div class="subject-tabs" id="subject-tabs-container">
+                    <span class="subject-tab active" data-subject-id="">Tất cả</span>
+                    <!-- Dynamic subjects -->
+                </div>
+                <!-- Search bar -->
+                <div style="position: relative; flex-grow: 1; max-width: 300px;">
+                    <input type="text" id="doc-search-box" class="input-control" style="padding-left: 2.2rem;" placeholder="Tìm kiếm tài liệu..." oninput="handleDocSearch()" />
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="doc-list-container">
+            <div class="doc-grid" id="doc-list-container">
+                <!-- Documents list -->
+                <div style="text-align: center; color: var(--text-secondary); padding: 3rem 0;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary);"></i>
+                    <p>Đang tải tài liệu học tập...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Floating Chat Toggle Bubble -->
+<div class="chat-widget-toggle" id="chat-toggle" onclick="toggleChatWidget()" title="Trợ lý AI Gemini">
+    <i class="fa-solid fa-comments"></i>
+</div>
+
+<!-- Floating Chat Widget Container -->
+<div class="chat-widget-container glass-card" id="chat-widget">
+    <!-- Sidebar: Chat sessions -->
+    <div class="sessions-sidebar">
+        <div class="sidebar-title">
+            <span><i class="fa-solid fa-comments"></i> Phiên Chat</span>
+            <button class="btn-secondary btn-icon" onclick="createNewSession()" title="Tạo phiên chat mới">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+        <div class="session-list" id="session-list-container">
+            <!-- Chat sessions will render here -->
+            <div style="color: var(--text-muted); text-align: center; margin-top: 2rem; font-size: 0.85rem;">
+                Đăng nhập để xem lịch sử
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-window">
+        <div class="chat-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem; width: calc(100% - 30px); overflow: hidden;">
+                <!-- Back Button inside Chat Header -->
+                <button id="chat-back-btn" class="btn btn-secondary btn-icon" style="padding: 0; width: 30px; height: 30px; font-size: 0.8rem; flex-shrink: 0;" onclick="showSessionsSidebar()" title="Quay lại danh sách">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <div style="min-width: 0; flex-grow: 1;">
+                    <div class="chat-header-title" id="active-chat-title" style="font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="Chọn hoặc tạo một phiên chat">Chọn hoặc tạo một phiên chat</div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="active-chat-sub">Trợ lý ảo học tập Gemini AI</div>
+                </div>
+            </div>
+            <div id="chat-header-actions">
+                <!-- Dynamic linking details -->
+            </div>
+        </div>
+        <div class="chat-messages" id="chat-messages-container">
+            <!-- Chat messages bubble -->
+            <div class="message-bubble bot">
+                Xin chào! Tôi là trợ lý học tập AI của Group9. Hãy đăng nhập để bắt đầu trò chuyện hoặc chọn <strong>Hỏi đáp tài liệu</strong> từ bảng tài liệu bên phải để tôi có thể đọc hiểu ngữ cảnh tài liệu học tập cùng bạn!
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <form class="chat-form" onsubmit="handleSendChat(event)">
+                <input type="text" id="chat-input-box" class="input-control" placeholder="Nhập câu hỏi của bạn tại đây..." disabled required />
+                <button type="submit" id="chat-send-btn" class="btn btn-primary" disabled>
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Auth Modal (Login / Register Tabs) -->
+<div class="modal-backdrop" id="auth-modal">
+    <div class="glass-card modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="auth-modal-title">Đăng nhập tài khoản</h3>
+            <button class="modal-close" onclick="closeAuthModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-tabs">
+                <div class="form-tab active" id="tab-login" onclick="switchAuthTab('login')">Đăng nhập</div>
+                <div class="form-tab" id="tab-register" onclick="switchAuthTab('register')">Đăng ký</div>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Email</label>
+                    <input type="email" id="login-email" class="input-control" placeholder="ten@email.com" required />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Mật khẩu</label>
+                    <input type="password" id="login-password" class="input-control" placeholder="••••••••" required />
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; width: 100%;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" onsubmit="handleRegister(event)" style="display: none;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div>
+                        <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Họ</label>
+                        <input type="text" id="reg-firstname" class="input-control" placeholder="Nguyen" required />
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Tên</label>
+                        <input type="text" id="reg-lastname" class="input-control" placeholder="Tai" required />
+                    </div>
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Email</label>
+                    <input type="email" id="reg-email" class="input-control" placeholder="ten@email.com" required />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Số điện thoại</label>
+                    <input type="tel" id="reg-phone" class="input-control" placeholder="09xxxxxx" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Mật khẩu</label>
+                    <input type="password" id="reg-password" class="input-control" placeholder="Tối thiểu 6 ký tự" minlength="6" required />
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; width: 100%;">
+                    <i class="fa-solid fa-user-plus"></i> Đăng ký tài khoản
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Document Modal (Admin only) -->
+<div class="modal-backdrop" id="upload-modal">
+    <div class="glass-card modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-file-arrow-up" style="color: var(--primary);"></i> Tải Lên Tài Liệu Mới</h3>
+            <button class="modal-close" onclick="closeUploadModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="upload-form" onsubmit="handleUpload(event)">
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Tiêu đề tài liệu</label>
+                    <input type="text" id="upload-title" class="input-control" placeholder="Ví dụ: Đề cương ôn tập PRN231" required />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Mô tả tài liệu</label>
+                    <textarea id="upload-desc" class="input-control" style="resize: vertical; min-height: 80px;" placeholder="Tóm tắt nội dung tài liệu ôn tập này..."></textarea>
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Môn học áp dụng</label>
+                    <select id="upload-subject-id" class="input-control" required style="background-color: #1a1c38;">
+                        <!-- Dynamic options -->
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Chọn tệp tin</label>
+                    <input type="file" id="upload-file" class="input-control" required accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.csv,.xls,.xlsx" />
+                    <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.3rem;">Hỗ trợ: PDF, TXT, Excel (XLS, XLSX), CSV, Ảnh (JPG, PNG, GIF, WEBP). Tối đa 20MB.</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeUploadModal()">Hủy bỏ</button>
+                    <button type="submit" id="upload-submit-btn" class="btn btn-primary" style="flex: 2;">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Tải lên đám mây
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Subject Modal (Admin only) -->
+<div class="modal-backdrop" id="subject-modal">
+    <div class="glass-card modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-folder-plus" style="color: var(--primary);"></i> Thêm Môn Học Mới</h3>
+            <button class="modal-close" onclick="closeSubjectModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="subject-form" onsubmit="handleCreateSubject(event)">
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Mã môn học</label>
+                    <input type="text" id="subject-code" class="input-control" placeholder="Ví dụ: PRN231" required maxlength="20" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 0.4rem;">Tên môn học</label>
+                    <input type="text" id="subject-name" class="input-control" placeholder="Ví dụ: Lập trình ứng dụng với C#" required maxlength="200" />
+                </div>
+                <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                    <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeSubjectModal()">Hủy bỏ</button>
+                    <button type="submit" id="subject-submit-btn" class="btn btn-primary" style="flex: 2;">
+                        <i class="fa-solid fa-plus"></i> Tạo môn học
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Document Details Modal -->
+<div class="modal-backdrop" id="doc-details-modal">
+    <div class="glass-card modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-file-invoice" style="color: var(--primary);"></i> Chi Tiết Tài Liệu</h3>
+            <button class="modal-close" onclick="closeDocDetailsModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="doc-details-content">
+            <!-- Content loaded via JS -->
+        </div>
+    </div>
+</div>
+
+<!-- Toast notification container -->
+<div class="toast-container" id="toast-container"></div>
+
+@section Scripts {
+<script>
+    // --- State Storage ---
+    let token = localStorage.getItem("jwt_token") || null;
+    let currentUser = null;
+    let subjects = [];
+    let activeSubjectId = "";
+    let searchQuery = "";
+    let chatSessions = [];
+    let activeSessionId = null;
+
+    // --- Bootstrapping ---
+    document.addEventListener("DOMContentLoaded", async () => {
+        setupToken();
+        await fetchSubjects();
+        await fetchDocuments();
+        
+        if (token) {
+            await fetchProfile();
+            await fetchChatSessions();
+        }
+
+        // Hide back button initially
+        document.getElementById("chat-back-btn").style.display = "none";
+    });
+
+    // --- Helper Functions ---
+    function setupToken() {
+        if (token) {
+            // Enable chat box inputs
+            document.getElementById("chat-input-box").disabled = false;
+            document.getElementById("chat-send-btn").disabled = false;
+        }
+    }
+
+    function showToast(message, type = "success") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        toast.className = `toast ${type}`;
+        
+        let icon = type === "success" ? "fa-circle-check" : "fa-circle-exclamation";
+        toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+        
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // --- Modal Handlers ---
+    function openAuthModal() {
+        document.getElementById("auth-modal").classList.add("active");
+        switchAuthTab('login');
+    }
+    function closeAuthModal() {
+        document.getElementById("auth-modal").classList.remove("active");
+    }
+    function openUploadModal() {
+        document.getElementById("upload-modal").classList.add("active");
+    }
+    function closeUploadModal() {
+        document.getElementById("upload-modal").classList.remove("active");
+        document.getElementById("upload-form").reset();
+    }
+    function openSubjectModal() {
+        document.getElementById("subject-modal").classList.add("active");
+    }
+    function closeSubjectModal() {
+        document.getElementById("subject-modal").classList.remove("active");
+        document.getElementById("subject-form").reset();
+    }
+    function toggleChatWidget() {
+        const widget = document.getElementById("chat-widget");
+        widget.classList.toggle("active");
+    }
+    function showSessionsSidebar() {
+        const widget = document.getElementById("chat-widget");
+        widget.classList.remove("chat-active");
+    }
+    function closeDocDetailsModal() {
+        document.getElementById("doc-details-modal").classList.remove("active");
+    }
+
+    function switchAuthTab(tab) {
+        if (tab === 'login') {
+            document.getElementById("tab-login").classList.add("active");
+            document.getElementById("tab-register").classList.remove("active");
+            document.getElementById("login-form").style.display = "flex";
+            document.getElementById("register-form").style.display = "none";
+            document.getElementById("auth-modal-title").innerText = "Đăng nhập tài khoản";
+        } else {
+            document.getElementById("tab-login").classList.remove("active");
+            document.getElementById("tab-register").classList.add("active");
+            document.getElementById("login-form").style.display = "none";
+            document.getElementById("register-form").style.display = "flex";
+            document.getElementById("auth-modal-title").innerText = "Đăng ký tài khoản mới";
+        }
+    }
+
+    // --- Auth API Actions ---
+    async function handleLogin(e) {
+        e.preventDefault();
+        const email = document.getElementById("login-email").value;
+        const password = document.getElementById("login-password").value;
+
+        try {
+            const res = await fetch("/api/Auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || "Tài khoản hoặc mật khẩu không hợp lệ.");
+            }
+
+            const data = await res.json();
+            token = data.accessToken;
+            localStorage.setItem("jwt_token", token);
+            currentUser = data.user;
+            
+            showToast("Đăng nhập thành công!");
+            closeAuthModal();
+            setupToken();
+            updateAuthUI();
+            
+            await fetchChatSessions();
+            await fetchDocuments(); // Admin gets Delete buttons
+        } catch (err) {
+            showToast(err.message, "error");
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        const firstName = document.getElementById("reg-firstname").value;
+        const lastName = document.getElementById("reg-lastname").value;
+        const email = document.getElementById("reg-email").value;
+        const phone = document.getElementById("reg-phone").value;
+        const password = document.getElementById("reg-password").value;
+
+        try {
+            const res = await fetch("/api/Auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ firstName, lastName, email, phone, password })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || "Đăng ký tài khoản thất bại.");
+            }
+
+            showToast("Đăng ký thành công! Hãy thực hiện đăng nhập.");
+            switchAuthTab('login');
+        } catch (err) {
+            showToast(err.message, "error");
+        }
+    }
+
+    async function fetchProfile() {
+        if (!token) return;
+        try {
+            const res = await fetch("/api/Auth/me", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) {
+                currentUser = await res.json();
+                updateAuthUI();
+            } else {
+                handleLogout(); // Token expired
+            }
+        } catch {
+            handleLogout();
+        }
+    }
+
+    function handleLogout() {
+        token = null;
+        currentUser = null;
+        chatSessions = [];
+        activeSessionId = null;
+        localStorage.removeItem("jwt_token");
+        
+        // Reset chat box
+        document.getElementById("chat-input-box").disabled = true;
+        document.getElementById("chat-send-btn").disabled = true;
+        document.getElementById("session-list-container").innerHTML = `
+            <div style="color: var(--text-muted); text-align: center; margin-top: 2rem; font-size: 0.85rem;">
+                Đăng nhập để xem lịch sử
+            </div>
+        `;
+        document.getElementById("chat-messages-container").innerHTML = `
+            <div class="message-bubble bot">
+                Xin chào! Tôi là trợ lý học tập AI của Group9. Hãy đăng nhập để bắt đầu trò chuyện hoặc chọn <strong>Hỏi đáp tài liệu</strong> từ bảng tài liệu bên phải để tôi có thể đọc hiểu ngữ cảnh tài liệu học tập cùng bạn!
+            </div>
+        `;
+        document.getElementById("active-chat-title").innerText = "Chọn hoặc tạo một phiên chat";
+        document.getElementById("chat-header-actions").innerHTML = "";
+
+        // Reset widget UI state
+        const widget = document.getElementById("chat-widget");
+        widget.classList.remove("chat-active");
+        widget.classList.remove("active");
+        document.getElementById("chat-back-btn").style.display = "none";
+
+        updateAuthUI();
+        fetchDocuments(); // Remove admin delete buttons
+        showToast("Đã đăng xuất khỏi tài khoản.");
+    }
+
+    function updateAuthUI() {
+        const authSection = document.getElementById("auth-section");
+        const addDocTrigger = document.getElementById("add-doc-trigger");
+        const addSubjectTrigger = document.getElementById("add-subject-trigger");
+        
+        if (currentUser) {
+            authSection.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="font-size: 0.9rem; font-weight: 500; border: 1px solid var(--border-color); padding: 0.35rem 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.03);">
+                        <i class="fa-solid fa-user-circle" style="color: var(--primary);"></i> ${currentUser.firstName} (${currentUser.role})
+                    </span>
+                    <button class="btn btn-secondary" onclick="handleLogout()" title="Đăng xuất">
+                        <i class="fa-solid fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Show upload & subject options for Admin
+            if (currentUser.role === "Admin") {
+                addDocTrigger.style.display = "inline-flex";
+                if (addSubjectTrigger) addSubjectTrigger.style.display = "inline-flex";
+            } else {
+                addDocTrigger.style.display = "none";
+                if (addSubjectTrigger) addSubjectTrigger.style.display = "none";
+            }
+        } else {
+            authSection.innerHTML = `
+                <button class="btn btn-primary" onclick="openAuthModal()">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+                </button>
+            `;
+            addDocTrigger.style.display = "none";
+            if (addSubjectTrigger) addSubjectTrigger.style.display = "none";
+        }
+    }
+
+    // --- Subject & Document API Actions ---
+    async function fetchSubjects() {
+        try {
+            const res = await fetch("/api/Subject");
+            if (res.ok) {
+                subjects = await res.json();
+                
+                // Populate subject filter tabs
+                const tabsContainer = document.getElementById("subject-tabs-container");
+                tabsContainer.innerHTML = `<span class="subject-tab active" onclick="filterBySubject('')">Tất cả</span>`;
+                
+                // Populate select options in upload form
+                const selectElement = document.getElementById("upload-subject-id");
+                selectElement.innerHTML = "";
+
+                subjects.forEach(sub => {
+                    // Filter Tab
+                    const tab = document.createElement("span");
+                    tab.className = "subject-tab";
+                    tab.innerText = sub.subjectCode;
+                    tab.onclick = () => filterBySubject(sub.id, tab);
+                    tabsContainer.appendChild(tab);
+
+                    // Form Select
+                    const opt = document.createElement("option");
+                    opt.value = sub.id;
+                    opt.innerText = `${sub.subjectCode} - ${sub.subjectName}`;
+                    selectElement.appendChild(opt);
+                });
+            }
+        } catch {
+            showToast("Không thể tải danh sách môn học.", "error");
+        }
+    }
+
+    async function handleCreateSubject(e) {
+        e.preventDefault();
+        if (!token) return;
+
+        const subjectCode = document.getElementById("subject-code").value.trim();
+        const subjectName = document.getElementById("subject-name").value.trim();
+
+        const submitBtn = document.getElementById("subject-submit-btn");
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo...`;
+
+        try {
+            const res = await fetch("/api/Subject", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}` 
+                },
+                body: JSON.stringify({ 
+                    subjectCode: subjectCode, 
+                    subjectName: subjectName 
+                })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || "Tạo môn học thất bại.");
+            }
+
+            showToast("Đã tạo môn học mới thành công!");
+            closeSubjectModal();
+            await fetchSubjects();
+        } catch (err) {
+            showToast(err.message, "error");
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    }
+
+    function filterBySubject(subjectId, tabElement = null) {
+        activeSubjectId = subjectId;
+        
+        // Toggle tab highlights
+        const tabs = document.querySelectorAll("#subject-tabs-container .subject-tab");
+        tabs.forEach(t => t.classList.remove("active"));
+        
+        if (tabElement) {
+            tabElement.classList.add("active");
+        } else {
+            document.querySelector("#subject-tabs-container .subject-tab").classList.add("active");
+        }
+        
+        fetchDocuments();
+    }
+
+    function handleDocSearch() {
+        searchQuery = document.getElementById("doc-search-box").value;
+        fetchDocuments();
+    }
+
+    async function fetchDocuments() {
+        const listContainer = document.getElementById("doc-list-container");
+        let url = `/api/Document/filter-document?search=${encodeURIComponent(searchQuery)}`;
+        if (activeSubjectId) {
+            url += `&subjectId=${activeSubjectId}`;
+        }
+
+        try {
+            const res = await fetch(url);
+            if (res.status === 404) {
+                listContainer.innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
+                        <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>Không tìm thấy tài liệu học tập nào phù hợp.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (!res.ok) throw new Error();
+
+            const docs = await res.json();
+            listContainer.innerHTML = "";
+            
+            docs.forEach(doc => {
+                const card = document.createElement("div");
+                card.className = "doc-card";
+                
+                const isAdmin = currentUser && currentUser.role === "Admin";
+                const deleteButtonHtml = isAdmin 
+                    ? `<button class="btn btn-danger btn-icon" onclick="handleDeleteDoc(${doc.id}, event)" title="Xóa tài liệu"><i class="fa-solid fa-trash-can"></i></button>`
+                    : "";
+
+                const sizeText = formatBytes(doc.fileSize);
+
+                card.innerHTML = `
+                    <div class="doc-info">
+                        <div class="doc-title">${doc.title}</div>
+                        <div class="doc-meta">
+                            <span class="badge badge-subject">${doc.subjectCode}</span>
+                            <span><i class="fa-solid fa-file-lines"></i> ${doc.fileName}</span>
+                            <span><i class="fa-solid fa-weight-hanging"></i> ${sizeText}</span>
+                        </div>
+                    </div>
+                    <div class="doc-actions">
+                        <!-- View Details -->
+                        <button class="btn btn-secondary btn-icon" onclick="viewDocDetails(${doc.id}, event)" title="Xem chi tiết tài liệu"><i class="fa-solid fa-eye"></i></button>
+                        <!-- Ask AI about this doc -->
+                        ${token ? `<button class="btn btn-secondary btn-icon" onclick="askAiAboutDoc(${doc.id}, '${doc.title.replace(/'/g, "\\'")}', event)" title="Hỏi đáp tài liệu với AI"><i class="fa-solid fa-robot"></i></button>` : ""}
+                        <!-- Download (Redirects directly to Cloudinary) -->
+                        <a href="/api/Document/${doc.id}/download-document" target="_blank" class="btn btn-primary btn-icon" title="Tải xuống tài liệu">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                        </a>
+                        ${deleteButtonHtml}
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        } catch {
+            listContainer.innerHTML = `
+                <div style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--danger); opacity: 0.7;"></i>
+                    <p>Đã xảy ra lỗi khi kết nối với máy chủ.</p>
+                </div>
+            `;
+        }
+    }
+
+    async function viewDocDetails(docId, event) {
+        if (event) event.stopPropagation();
+        const contentArea = document.getElementById("doc-details-content");
+        contentArea.innerHTML = `
+            <div style="text-align: center; color: var(--text-secondary); padding: 2rem 0;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--primary);"></i>
+                <p>Đang tải chi tiết tài liệu...</p>
+            </div>
+        `;
+        document.getElementById("doc-details-modal").classList.add("active");
+
+        try {
+            const res = await fetch(`/api/Document/${docId}/get-document-by-id`);
+            if (!res.ok) throw new Error("Không thể tải thông tin tài liệu.");
+            const doc = await res.json();
+            
+            const sizeText = formatBytes(doc.fileSize);
+            const uploadDate = new Date(doc.uploadedAt).toLocaleString("vi-VN");
+            const descText = doc.description ? doc.description.replace(/\n/g, "<br/>") : `<span style="color: var(--text-muted); font-style: italic;">Không có mô tả cho tài liệu này.</span>`;
+
+            contentArea.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <div>
+                        <h4 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 0.25rem;">${doc.title}</h4>
+                        <span class="badge badge-subject">${doc.subjectCode} - ${doc.subjectName}</span>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 1rem; border-radius: 8px; font-size: 0.9rem; line-height: 1.5;">
+                        <strong style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.4rem;">MÔ TẢ TÀI LIỆU</strong>
+                        <div>${descText}</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.82rem; color: var(--text-secondary);">
+                        <div style="grid-column: span 2;">
+                            <strong>Tên file:</strong> <span style="color: var(--text-primary); word-break: break-all;">${doc.fileName}</span>
+                        </div>
+                        <div>
+                            <strong>Dung lượng:</strong> <span style="color: var(--text-primary);">${sizeText}</span>
+                        </div>
+                        <div>
+                            <strong>Người đăng:</strong> <span style="color: var(--text-primary);">${doc.uploadedByUserName}</span>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <strong>Ngày đăng:</strong> <span style="color: var(--text-primary);">${uploadDate}</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                        <a href="/api/Document/${doc.id}/download-document" target="_blank" class="btn btn-primary" style="flex: 1;" onclick="closeDocDetailsModal()">
+                            <i class="fa-solid fa-cloud-arrow-down"></i> Tải xuống
+                        </a>
+                        ${token ? `
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="closeDocDetailsModal(); askAiAboutDoc(${doc.id}, '${doc.title.replace(/'/g, "\\'")}', event)">
+                            <i class="fa-solid fa-robot"></i> Hỏi AI
+                        </button>
+                        ` : ""}
+                    </div>
+                </div>
+            `;
+        } catch (err) {
+            contentArea.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 2rem 0;">${err.message}</div>`;
+        }
+    }
+
+    async function handleUpload(e) {
+        e.preventDefault();
+        if (!token) return;
+
+        const title = document.getElementById("upload-title").value;
+        const description = document.getElementById("upload-desc").value;
+        const subjectId = document.getElementById("upload-subject-id").value;
+        const fileInput = document.getElementById("upload-file");
+        
+        if (fileInput.files.length === 0) {
+            showToast("Vui lòng chọn tệp tin.", "error");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        
+        // Show loading state
+        const submitBtn = document.getElementById("upload-submit-btn");
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang tải lên...`;
+
+        const formData = new FormData();
+        formData.append("Title", title);
+        formData.append("Description", description);
+        formData.append("SubjectId", subjectId);
+        formData.append("File", file);
+
+        try {
+            const res = await fetch("/api/Document/create-document", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || "Tải tài liệu lên thất bại.");
+            }
+
+            showToast("Đã đăng tài liệu và đẩy lên Cloud Storage thành công!");
+            closeUploadModal();
+            await fetchDocuments();
+        } catch (err) {
+            showToast(err.message, "error");
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    }
+
+    async function handleDeleteDoc(id, event) {
+        event.stopPropagation();
+        if (!token) return;
+        
+        if (!confirm("Bạn có chắc chắn muốn xóa tài liệu này cùng với tệp tin trên Cloudinary không?")) return;
+
+        try {
+            const res = await fetch(`/api/Document/${id}/delete-document`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || "Xóa tài liệu thất bại.");
+            }
+
+            showToast("Đã xóa tài liệu khỏi hệ thống và Cloud Storage.");
+            await fetchDocuments();
+            
+            // If current chat is related to this doc, reset it
+            if (activeSessionId) {
+                const currentSession = chatSessions.find(s => s.id === activeSessionId);
+                if (currentSession && currentSession.documentId === id) {
+                    createNewSession();
+                }
+            }
+        } catch (err) {
+            showToast(err.message, "error");
+        }
+    }
+
+    // --- Chatbot API Actions ---
+    async function fetchChatSessions() {
+        if (!token) return;
+        try {
+            const res = await fetch("/api/chat/sessions", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) {
+                chatSessions = await res.json();
+                renderChatSessions();
+            }
+        } catch {
+            showToast("Không thể tải lịch sử phiên chat.", "error");
+        }
+    }
+
+    function renderChatSessions() {
+        const container = document.getElementById("session-list-container");
+        container.innerHTML = "";
+        
+        if (chatSessions.length === 0) {
+            container.innerHTML = `
+                <div style="color: var(--text-muted); text-align: center; margin-top: 2rem; font-size: 0.82rem;">
+                    Chưa có phiên chat nào. Hãy tạo mới!
+                </div>
+            `;
+            return;
+        }
+
+        chatSessions.forEach(session => {
+            const item = document.createElement("div");
+            item.className = `session-item ${activeSessionId === session.id ? 'active' : ''}`;
+            item.onclick = () => selectChatSession(session.id);
+            
+            const docBadge = session.documentId 
+                ? `<span style="font-size:0.65rem; padding:0.1rem 0.3rem; border-radius:4px; background:rgba(236,72,153,0.15); color:#f472b6; border:1px solid rgba(236,72,153,0.25);">DOC</span>`
+                : "";
+
+            item.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:0.15rem;">
+                    <span class="session-title-text" title="${session.title}">${session.title}</span>
+                    <span style="font-size:0.7rem; color:var(--text-secondary); display:flex; align-items:center; gap:0.25rem;">
+                        ${docBadge}
+                        <span>${new Date(session.createdAt).toLocaleDateString("vi-VN")}</span>
+                    </span>
+                </div>
+                <button class="session-delete-btn" onclick="handleDeleteSession(${session.id}, event)" title="Xóa phiên chat">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    async function selectChatSession(sessionId) {
+        activeSessionId = sessionId;
+        
+        // Highlight active session
+        const items = document.querySelectorAll(".session-item");
+        items.forEach(item => item.classList.remove("active"));
+        renderChatSessions(); // Update highlights
+
+        // Switch layout to chat window
+        document.getElementById("chat-widget").classList.add("chat-active");
+        document.getElementById("chat-back-btn").style.display = "inline-flex";
+
+        const session = chatSessions.find(s => s.id === sessionId);
+        if (session) {
+            document.getElementById("active-chat-title").innerText = session.title;
+            if (session.documentId) {
+                document.getElementById("active-chat-sub").innerHTML = `<i class="fa-solid fa-file-lines" style="color: var(--secondary);"></i> Đang kết hợp tài liệu: <strong>${session.documentTitle}</strong>`;
+                document.getElementById("chat-header-actions").innerHTML = `
+                    <button class="btn btn-secondary" style="padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="askAiAboutDoc(${session.documentId}, '${session.documentTitle.replace(/'/g, "\\'")}', event)">
+                        <i class="fa-solid fa-sync"></i> Re-link Doc
+                    </button>
+                `;
+            } else {
+                document.getElementById("active-chat-sub").innerText = "Hỏi đáp tự do cùng Gemini AI";
+                document.getElementById("chat-header-actions").innerHTML = "";
+            }
+        }
+
+        // Fetch messages
+        const msgContainer = document.getElementById("chat-messages-container");
+        msgContainer.innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--primary);"></i>
+                <p>Đang tải hội thoại...</p>
+            </div>
+        `;
+
+        try {
+            const res = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const messages = await res.json();
+                msgContainer.innerHTML = "";
+                
+                if (messages.length === 0) {
+                    msgContainer.innerHTML = `
+                        <div style="color: var(--text-secondary); text-align:center; padding: 2rem 0; font-size:0.85rem;">
+                            Bắt đầu bằng cách gửi tin nhắn ở ô bên dưới!
+                        </div>
+                    `;
+                } else {
+                    messages.forEach(msg => {
+                        appendMessageBubble(msg.sender, msg.content, msg.sentAt);
+                    });
+                }
+                scrollToBottom();
+            }
+        } catch {
+            msgContainer.innerHTML = `<div style="text-align:center; color:var(--danger); padding:2rem;">Lỗi tải tin nhắn.</div>`;
+        }
+    }
+
+    function createNewSession() {
+        activeSessionId = null;
+        document.getElementById("active-chat-title").innerText = "Phiên trò chuyện mới";
+        document.getElementById("active-chat-sub").innerText = "Trợ lý ảo học tập Gemini AI";
+        document.getElementById("chat-header-actions").innerHTML = "";
+        
+        document.getElementById("chat-messages-container").innerHTML = `
+            <div class="message-bubble bot">
+                Tôi đang lắng nghe bạn. Hãy gửi tin nhắn đầu tiên để bắt đầu một phiên chat hỏi đáp tự do mới!
+            </div>
+        `;
+        
+        // Remove active class highlights
+        const items = document.querySelectorAll(".session-item");
+        items.forEach(item => item.classList.remove("active"));
+
+        // Switch layout to chat window
+        document.getElementById("chat-widget").classList.add("chat-active");
+        document.getElementById("chat-back-btn").style.display = "inline-flex";
+    }
+
+    async function askAiAboutDoc(docId, docTitle, event) {
+        event.stopPropagation();
+        if (!token) {
+            openAuthModal();
+            return;
+        }
+
+        // Show AI chat linking state
+        activeSessionId = null; // New session specifically for this doc
+        document.getElementById("active-chat-title").innerText = `Hỏi đáp: ${docTitle}`;
+        document.getElementById("active-chat-sub").innerHTML = `<i class="fa-solid fa-file-lines" style="color: var(--secondary);"></i> Đang thiết lập liên kết tài liệu...`;
+        
+        document.getElementById("chat-messages-container").innerHTML = `
+            <div class="message-bubble bot">
+                Tôi đã liên kết với tài liệu <strong>"${docTitle}"</strong>.<br/>
+                Hệ thống AI sẽ tự động đọc hiểu tiêu đề, mô tả và nội dung môn học của tài liệu này để phản hồi câu hỏi của bạn.<br/><br/>
+                <em>Hãy đặt câu hỏi đầu tiên ở khung bên dưới để tự động tạo phiên chat mới liên kết với tài liệu này!</em>
+            </div>
+        `;
+        
+        // Store linked doc ID temporarily in form submit logic
+        document.getElementById("chat-form-linked-doc-id").value = docId;
+
+        // Auto-open chat widget and show chat window
+        const widget = document.getElementById("chat-widget");
+        widget.classList.add("active");
+        widget.classList.add("chat-active");
+        document.getElementById("chat-back-btn").style.display = "inline-flex";
+    }
+
+    async function handleSendChat(e) {
+        e.preventDefault();
+        if (!token) return;
+
+        const inputBox = document.getElementById("chat-input-box");
+        const messageContent = inputBox.value.trim();
+        if (!messageContent) return;
+
+        // Extract any linked doc ID
+        const linkedDocField = document.getElementById("chat-form-linked-doc-id");
+        const linkedDocId = linkedDocField.value ? parseInt(linkedDocField.value) : null;
+
+        // Clear input box
+        inputBox.value = "";
+        
+        // Append user bubble instantly
+        appendMessageBubble("User", messageContent, new Date());
+        scrollToBottom();
+
+        // Append Bot loading bubble
+        const msgContainer = document.getElementById("chat-messages-container");
+        const botLoadingBubble = document.createElement("div");
+        botLoadingBubble.className = "message-bubble bot";
+        botLoadingBubble.id = "bot-typing-placeholder";
+        botLoadingBubble.innerHTML = `<i class="fa-solid fa-ellipsis fa-bounce"></i> Trợ lý AI đang suy nghĩ...`;
+        msgContainer.appendChild(botLoadingBubble);
+        scrollToBottom();
+
+        const requestBody = {
+            content: messageContent,
+            sessionId: activeSessionId,
+            documentId: activeSessionId ? null : linkedDocId // Only send linked doc ID if creating new session
+        };
+
+        try {
+            const res = await fetch("/api/chat/messages", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            botLoadingBubble.remove(); // Remove spinner
+
+            if (!res.ok) throw new Error("Gặp sự cố khi gửi tin nhắn đến bot.");
+
+            const data = await res.json();
+            
+            // If it was a new session, update state
+            if (data.isNewSession) {
+                activeSessionId = data.sessionId;
+                linkedDocField.value = ""; // Clear temporary doc link
+                await fetchChatSessions();
+                selectChatSession(data.sessionId);
+            }
+
+            // Append bot response
+            appendMessageBubble("Bot", data.botMessage.content, data.botMessage.sentAt);
+            scrollToBottom();
+        } catch (err) {
+            botLoadingBubble.remove();
+            showToast(err.message, "error");
+        }
+    }
+
+    async function handleDeleteSession(sessionId, event) {
+        event.stopPropagation();
+        if (!token) return;
+        
+        if (!confirm("Bạn có chắc chắn muốn xóa phiên hội thoại này không?")) return;
+
+        try {
+            const res = await fetch(`/api/chat/sessions/${sessionId}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!res.ok) throw new Error("Không thể xóa phiên hội thoại.");
+
+            showToast("Đã xóa phiên chat.");
+            
+            if (activeSessionId === sessionId) {
+                createNewSession();
+            }
+            await fetchChatSessions();
+        } catch (err) {
+            showToast(err.message, "error");
+        }
+    }
+
+    function appendMessageBubble(sender, content, sentAt) {
+        const msgContainer = document.getElementById("chat-messages-container");
+        
+        // Remove empty state message if exists
+        if (msgContainer.innerText.includes("Bắt đầu bằng cách gửi tin nhắn")) {
+            msgContainer.innerHTML = "";
+        }
+
+        const bubble = document.createElement("div");
+        bubble.className = `message-bubble ${sender.toLowerCase()}`;
+        
+        const timeText = new Date(sentAt).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' });
+        
+        // Format markdown newlines simply
+        const formattedContent = content.replace(/\n/g, "<br/>");
+        
+        bubble.innerHTML = `
+            <div>${formattedContent}</div>
+            <div class="message-time">${timeText}</div>
+        `;
+        
+        msgContainer.appendChild(bubble);
+    }
+
+    function scrollToBottom() {
+        const msgContainer = document.getElementById("chat-messages-container");
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+    }
+
+    // --- Helper Utilities ---
+    function formatBytes(bytes, decimals = 2) {
+        if (!+bytes) return '0 B'
+        const k = 1024
+        const dm = decimals < 0 ? 0 : decimals
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+        const i = Math.floor(Math.log(bytes) / Math.log(k))
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+    }
+</script>
+
+<!-- Hidden input fields to hold page state -->
+<input type="hidden" id="chat-form-linked-doc-id" value="" />
+}

@@ -1,6 +1,7 @@
 using Group9.Data;
 using Group9.DTOs;
 using Group9.Models;
+using Group9.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -18,16 +19,12 @@ namespace Group9.Controllers
     public class DocumentController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly string _uploadsFolder;
+        private readonly CloudinaryStorageService _cloudinaryStorageService;
 
-        public DocumentController(AppDbContext context)
+        public DocumentController(AppDbContext context, CloudinaryStorageService cloudinaryStorageService)
         {
             _context = context;
-            _uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
-            if (!Directory.Exists(_uploadsFolder))
-            {
-                Directory.CreateDirectory(_uploadsFolder);
-            }
+            _cloudinaryStorageService = cloudinaryStorageService;
         }
 
         [HttpPost("create-document")]
@@ -38,6 +35,24 @@ namespace Group9.Controllers
             if (request.File == null || request.File.Length == 0)
             {
                 return BadRequest(new { message = "Không nhận được tệp tin hoặc tệp tin rỗng." });
+            }
+
+            var maxSize = 20 * 1024 * 1024; // 20MB
+            if (request.File.Length > maxSize)
+            {
+                return BadRequest(new { message = "File không được vượt quá 20MB." });
+            }
+
+            var originalFileName = Path.GetFileName(request.File.FileName);
+            var extension = Path.GetExtension(originalFileName).ToLowerInvariant();
+            var allowedExtensions = new[]
+            {
+                ".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf", ".txt", ".csv", ".xls", ".xlsx"
+            };
+
+            if (!allowedExtensions.Contains(extension))
+            {
+                return BadRequest(new { message = "Chỉ hỗ trợ JPG, PNG, GIF, WEBP, PDF, TXT, CSV, XLS, XLSX." });
             }
 
             var subjectExists = await _context.Subjects.AnyAsync(s => s.Id == request.SubjectId);
@@ -52,25 +67,68 @@ namespace Group9.Controllers
                 return Unauthorized();
             }
 
-            // Generate unique name for saving
-            var fileExtension = Path.GetExtension(request.File.FileName);
-            var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-            var storagePath = Path.Combine(_uploadsFolder, uniqueFileName);
+            var contentType = string.IsNullOrWhiteSpace(request.File.ContentType)
+                ? "application/octet-stream"
+                : request.File.ContentType;
 
-            // Save file physically
-            using (var stream = new FileStream(storagePath, FileMode.Create))
+            string publicId = string.Empty;
+            string secureUrl = string.Empty;
+
+            try
             {
-                await request.File.CopyToAsync(stream);
+                using var stream = request.File.OpenReadStream();
+
+                if (contentType.StartsWith("image/"))
+                {
+                    var result = await _cloudinaryStorageService.UploadImageAsync(
+                        stream,
+                        originalFileName,
+                        userId.Value
+                    );
+
+                    if (result.Error != null)
+                    {
+                        throw new Exception(result.Error.Message);
+                    }
+
+                    publicId = result.PublicId;
+                    secureUrl = result.SecureUrl?.ToString() ?? string.Empty;
+                }
+                else
+                {
+                    var result = await _cloudinaryStorageService.UploadRawAsync(
+                        stream,
+                        originalFileName,
+                        userId.Value
+                    );
+
+                    if (result.Error != null)
+                    {
+                        throw new Exception(result.Error.Message);
+                    }
+
+                    publicId = result.PublicId;
+                    secureUrl = result.SecureUrl?.ToString() ?? string.Empty;
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Upload file lên Cloud Storage thất bại.",
+                    error = ex.Message
+                });
             }
 
             var document = new Document
             {
                 Title = request.Title.Trim(),
                 Description = request.Description?.Trim(),
-                FileName = request.File.FileName,
-                StoragePath = storagePath,
+                FileName = originalFileName,
+                StoragePath = secureUrl,
+                PublicId = publicId,
                 FileSize = request.File.Length,
-                ContentType = request.File.ContentType,
+                ContentType = contentType,
                 SubjectId = request.SubjectId,
                 UploadedByUserId = userId.Value,
                 UploadedAt = DateTime.UtcNow
@@ -141,7 +199,7 @@ namespace Group9.Controllers
         }
 
         [HttpGet("{id}/download-document")]
-        public async Task<IActionResult> DownloadDocument(int id)
+        public async Task<IActionResult> DownloadDocument(int id, [FromServices] System.Net.Http.IHttpClientFactory httpClientFactory)
         {
             var document = await _context.Documents.FindAsync(id);
             if (document == null)
@@ -149,13 +207,73 @@ namespace Group9.Controllers
                 return NotFound(new { message = "Không tìm thấy tài liệu." });
             }
 
-            if (!System.IO.File.Exists(document.StoragePath))
+            if (string.IsNullOrEmpty(document.StoragePath))
             {
-                return NotFound(new { message = "Tệp tin vật lý không tồn tại trên hệ thống." });
+                return NotFound(new { message = "Đường dẫn tải tài liệu không hợp lệ." });
             }
 
-            var fileBytes = await System.IO.File.ReadAllBytesAsync(document.StoragePath);
-            return File(fileBytes, document.ContentType, document.FileName);
+            // Handle local file schema for testing / development
+            if (document.StoragePath.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var uri = new Uri(document.StoragePath);
+                    var localPath = uri.LocalPath;
+                    if (System.IO.File.Exists(localPath))
+                    {
+                        var fileStream = System.IO.File.OpenRead(localPath);
+                        return File(fileStream, document.ContentType, document.FileName);
+                    }
+                    else
+                    {
+                        return NotFound(new { message = $"Không tìm thấy file cục bộ tại đường dẫn: {localPath}" });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, new { message = "Lỗi khi mở file cục bộ.", error = ex.Message });
+                }
+            }
+            else if (!document.StoragePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                     !document.StoragePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase) &&
+                     System.IO.Path.IsPathRooted(document.StoragePath))
+            {
+                try
+                {
+                    if (System.IO.File.Exists(document.StoragePath))
+                    {
+                        var fileStream = System.IO.File.OpenRead(document.StoragePath);
+                        return File(fileStream, document.ContentType, document.FileName);
+                    }
+                    else
+                    {
+                        return NotFound(new { message = $"Không tìm thấy file cục bộ tại đường dẫn: {document.StoragePath}" });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, new { message = "Lỗi khi mở file cục bộ.", error = ex.Message });
+                }
+            }
+
+            // Handle remote HTTP/HTTPS file
+            try
+            {
+                var client = httpClientFactory.CreateClient();
+                var response = await client.GetAsync(document.StoragePath);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    return StatusCode((int)response.StatusCode, new { message = "Không thể tải tài liệu từ bộ lưu trữ đám mây." });
+                }
+
+                var fileStream = await response.Content.ReadAsStreamAsync();
+                return File(fileStream, document.ContentType, document.FileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi khi tải tài liệu từ máy chủ đám mây.", error = ex.Message });
+            }
         }
 
         [HttpPut("{id}/edit-document")]
@@ -222,12 +340,13 @@ namespace Group9.Controllers
                 return Forbid();
             }
 
-            // Remove physical file first
-            if (System.IO.File.Exists(document.StoragePath))
+            // Remove file from Cloudinary first
+            if (!string.IsNullOrEmpty(document.PublicId))
             {
                 try
                 {
-                    System.IO.File.Delete(document.StoragePath);
+                    var resourceType = document.ContentType.StartsWith("image/") ? "image" : "raw";
+                    await _cloudinaryStorageService.DeleteFileAsync(document.PublicId, resourceType);
                 }
                 catch (Exception)
                 {

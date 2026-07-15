@@ -134,6 +134,11 @@ namespace Group9.Data
                     .IsRequired()
                     .HasMaxLength(500);
 
+                entity.Property(d => d.PublicId)
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasDefaultValue(string.Empty);
+
                 entity.Property(d => d.ContentType)
                     .IsRequired()
                     .HasMaxLength(100);
