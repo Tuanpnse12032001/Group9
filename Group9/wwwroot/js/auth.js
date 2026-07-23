@@ -16,11 +16,30 @@ function clearAuthStorage() {
 function setGuestNavbar() {
     document.querySelectorAll(".guest-link").forEach(x => x.style.display = "inline-block");
     document.querySelectorAll(".auth-link").forEach(x => x.style.display = "none");
+    document.querySelectorAll(".admin-link").forEach(x => x.style.display = "none");
 }
 
 function setAuthNavbar() {
     document.querySelectorAll(".guest-link").forEach(x => x.style.display = "none");
     document.querySelectorAll(".auth-link").forEach(x => x.style.display = "inline-block");
+    document.querySelectorAll(".admin-link").forEach(x => x.style.display = "none");
+}
+
+function setAdminNavbar() {
+    document.querySelectorAll(".guest-link").forEach(x => x.style.display = "none");
+    document.querySelectorAll(".auth-link").forEach(x => x.style.display = "inline-block");
+    document.querySelectorAll(".admin-link").forEach(x => x.style.display = "inline-block");
+}
+
+function getRoleName(user) {
+    if (!user) {
+        return "";
+    }
+
+    return user.roleName ||
+        user.role ||
+        user.role?.roleName ||
+        "";
 }
 
 async function apiPost(url, body) {
@@ -136,6 +155,33 @@ async function apiPutAuth(url, body) {
     }
 }
 
+async function apiDeleteAuth(url) {
+    try {
+        const response = await fetch(url, {
+            method: "DELETE",
+            headers: {
+                "Authorization": "Bearer " + getAccessToken()
+            }
+        });
+
+        const data = await safeJson(response);
+
+        return {
+            ok: response.ok,
+            status: response.status,
+            data
+        };
+    } catch (error) {
+        return {
+            ok: false,
+            status: 0,
+            data: {
+                message: "Không kết nối được server."
+            }
+        };
+    }
+}
+
 async function safeJson(response) {
     try {
         return await response.json();
@@ -191,7 +237,17 @@ async function checkLoginStatus() {
         return false;
     }
 
-    setAuthNavbar();
+    const user = result.data;
+    const roleName = getRoleName(user);
+
+    localStorage.setItem("user", JSON.stringify(user));
+
+    if (roleName === "Admin") {
+        setAdminNavbar();
+    } else {
+        setAuthNavbar();
+    }
+
     return true;
 }
 
@@ -211,6 +267,34 @@ async function requireAuthPage() {
 
     if (!isLoggedIn) {
         window.location.href = "/auth-ui/login";
+        return false;
+    }
+
+    return true;
+}
+
+async function requireAdminPage() {
+    const isLoggedIn = await checkLoginStatus();
+
+    if (!isLoggedIn) {
+        window.location.href = "/auth-ui/login";
+        return false;
+    }
+
+    const result = await apiGetAuth("/api/auth/me");
+
+    if (!result.ok) {
+        clearAuthStorage();
+        setGuestNavbar();
+        window.location.href = "/auth-ui/login";
+        return false;
+    }
+
+    const user = result.data;
+    const roleName = getRoleName(user);
+
+    if (roleName !== "Admin") {
+        window.location.href = "/auth-ui/profile";
         return false;
     }
 

@@ -41,5 +41,11 @@ namespace Group9.Controllers
         {
             return View("~/Views/AuthPage/ResetPassword.cshtml");
         }
+
+        [HttpGet("users")]
+        public IActionResult Users()
+        {
+            return View("~/Views/AuthPage/Users.cshtml");
+        }
     }
 }

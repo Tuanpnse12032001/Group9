@@ -1,0 +1,235 @@
+﻿<h2>Quản lý User</h2>
+
+<div id="protectedContent" class="hidden">
+    <div class="card">
+        <h3>Thêm user mới</h3>
+
+        <label>First name</label>
+        <input type="text" id="newFirstName" placeholder="First name" />
+
+        <label>Last name</label>
+        <input type="text" id="newLastName" placeholder="Last name" />
+
+        <label>Email</label>
+        <input type="email" id="newEmail" placeholder="Email" />
+
+        <label>Phone</label>
+        <input type="text" id="newPhone" placeholder="Phone" />
+
+        <label>Password</label>
+        <input type="password" id="newPassword" placeholder="Password" />
+
+        <label>Role</label>
+        <select id="newRoleId"></select>
+
+        <button onclick="createUser()">Thêm user</button>
+
+        <div id="message"></div>
+    </div>
+
+    <div class="card">
+        <h3>Danh sách tài khoản</h3>
+
+        <button onclick="loadUsers()">Refresh</button>
+
+        <table class="file-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First name</th>
+                    <th>Last name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Lưu</th>
+                    <th>Xóa</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let roles = [];
+
+        initUsersPage();
+
+        async function initUsersPage() {
+            const canAccess = await requireAdminPage();
+
+            if (!canAccess) {
+                return;
+            }
+
+            document.getElementById("protectedContent").classList.remove("hidden");
+
+            await loadRoles();
+            await loadUsers();
+        }
+
+        async function loadRoles() {
+            const result = await apiGetAuth("/api/admin/users/roles");
+
+            if (!result.ok) {
+                showMessage(result);
+                return;
+            }
+
+            roles = result.data;
+
+            const newRoleSelect = document.getElementById("newRoleId");
+            newRoleSelect.innerHTML = roles.map(role => {
+                return `<option value="${role.id}">${role.roleName}</option>`;
+            }).join("");
+        }
+
+        async function loadUsers() {
+            const result = await apiGetAuth("/api/admin/users");
+
+            if (!result.ok) {
+                showMessage(result);
+                return;
+            }
+
+            const tbody = document.getElementById("userTableBody");
+            tbody.innerHTML = "";
+
+            result.data.forEach(user => {
+                const tr = document.createElement("tr");
+
+                tr.innerHTML = `
+                    <td>${user.id}</td>
+
+                    <td>
+                        <input type="text" id="firstName_${user.id}" value="${escapeHtml(user.firstName || "")}" />
+                    </td>
+
+                    <td>
+                        <input type="text" id="lastName_${user.id}" value="${escapeHtml(user.lastName || "")}" />
+                    </td>
+
+                    <td>${user.email}</td>
+
+                    <td>
+                        <input type="text" id="phone_${user.id}" value="${escapeHtml(user.phone || "")}" />
+                    </td>
+
+                    <td>
+                        <select id="role_${user.id}">
+                            ${buildRoleOptions(user.roleId)}
+                        </select>
+                    </td>
+
+                    <td>
+                        <button onclick="updateUser(${user.id})">Lưu</button>
+                    </td>
+
+                    <td>
+                        <button class="danger-button" onclick="deleteUser(${user.id})">Xóa</button>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function buildRoleOptions(currentRoleId) {
+            return roles.map(role => {
+                const selected = role.id === currentRoleId ? "selected" : "";
+
+                return `
+                    <option value="${role.id}" ${selected}>
+                        ${role.roleName}
+                    </option>
+                `;
+            }).join("");
+        }
+
+        async function createUser() {
+            const firstName = document.getElementById("newFirstName").value.trim();
+            const lastName = document.getElementById("newLastName").value.trim();
+            const email = document.getElementById("newEmail").value.trim();
+            const phone = document.getElementById("newPhone").value.trim();
+            const password = document.getElementById("newPassword").value;
+            const roleId = Number(document.getElementById("newRoleId").value);
+
+            const result = await apiPostAuth("/api/admin/users", {
+                firstName,
+                lastName,
+                email,
+                phone,
+                password,
+                roleId
+            });
+
+            if (!result.ok) {
+                showMessage(result);
+                return;
+            }
+
+            showSuccess("Thêm user thành công.");
+
+            document.getElementById("newFirstName").value = "";
+            document.getElementById("newLastName").value = "";
+            document.getElementById("newEmail").value = "";
+            document.getElementById("newPhone").value = "";
+            document.getElementById("newPassword").value = "";
+
+            await loadUsers();
+        }
+
+        async function updateUser(userId) {
+            const firstName = document.getElementById(`firstName_${userId}`).value.trim();
+            const lastName = document.getElementById(`lastName_${userId}`).value.trim();
+            const phone = document.getElementById(`phone_${userId}`).value.trim();
+            const roleId = Number(document.getElementById(`role_${userId}`).value);
+
+            const result = await apiPutAuth(`/api/admin/users/${userId}`, {
+                firstName,
+                lastName,
+                phone,
+                roleId
+            });
+
+            if (!result.ok) {
+                showMessage(result);
+                return;
+            }
+
+            showSuccess("Cập nhật user thành công.");
+
+            await loadUsers();
+        }
+
+        async function deleteUser(userId) {
+            const confirmDelete = confirm("Bạn có chắc muốn xóa user này không?");
+
+            if (!confirmDelete) {
+                return;
+            }
+
+            const result = await apiDeleteAuth(`/api/admin/users/${userId}`);
+
+            if (!result.ok) {
+                showMessage(result);
+                return;
+            }
+
+            showSuccess("Xóa user thành công.");
+
+            await loadUsers();
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+    </script>
+}

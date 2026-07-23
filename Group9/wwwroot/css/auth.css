@@ -10,7 +10,7 @@ body {
 }
 
 .navbar {
-    height: 60px;
+    min-height: 60px;
     background: #111827;
     color: white;
     display: flex;
@@ -24,19 +24,25 @@ body {
     font-size: 20px;
 }
 
-.nav-links a {
-    color: white;
-    text-decoration: none;
-    margin-left: 18px;
-    font-size: 15px;
+.nav-links {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
 }
 
-    .nav-links a:hover {
-        text-decoration: underline;
+    .nav-links a {
+        color: white;
+        text-decoration: none;
+        font-size: 15px;
     }
 
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+
 .container {
-    max-width: 1000px;
+    max-width: 1100px;
     margin: 40px auto;
     padding: 0 20px;
 }
@@ -57,7 +63,8 @@ label {
 }
 
 input,
-textarea {
+textarea,
+select {
     width: 100%;
     padding: 11px 12px;
     border: 1px solid #d1d5db;
@@ -69,6 +76,10 @@ textarea {
 textarea {
     min-height: 90px;
     resize: vertical;
+}
+
+select {
+    min-width: 130px;
 }
 
 button {
@@ -83,6 +94,14 @@ button {
 
     button:hover {
         background: #1d4ed8;
+    }
+
+.danger-button {
+    background: #dc2626;
+}
+
+    .danger-button:hover {
+        background: #b91c1c;
     }
 
 .message {
@@ -120,8 +139,6 @@ button {
             text-decoration: underline;
         }
 
-
-
 .progress-wrapper {
     margin-top: 16px;
 }
@@ -145,6 +162,7 @@ button {
     width: 100%;
     border-collapse: collapse;
     margin-top: 16px;
+    background: white;
 }
 
     .file-table th,
@@ -152,10 +170,20 @@ button {
         border: 1px solid #e5e7eb;
         padding: 10px;
         text-align: left;
+        vertical-align: middle;
     }
 
     .file-table th {
         background: #f3f4f6;
+    }
+
+    .file-table button {
+        margin-top: 0;
+        padding: 8px 12px;
+    }
+
+    .file-table select {
+        margin-bottom: 8px;
     }
 
 .preview-image {
