@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>Group9 Auth UI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/css/auth.css" />
+</head>
+<body>
+    <nav class="navbar">
+        <div class="brand">Group9</div>
+
+        <div class="nav-links">
+            <a href="/auth-ui/login" class="guest-link">Login</a>
+            <a href="/auth-ui/register" class="guest-link">Register</a>
+            <a href="/auth-ui/forgot-password" class="guest-link">Forgot Password</a>
+
+            <a href="/auth-ui/profile" class="auth-link" style="display:none;">Profile</a>
+            <a href="/auth-ui/files" class="auth-link" style="display:none;">Files</a>
+            <a href="javascript:void(0)" class="auth-link" style="display:none;" onclick="logoutFromNavbar()">Logout</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        @RenderBody()
+    </main>
+
+    <script src="/js/auth.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

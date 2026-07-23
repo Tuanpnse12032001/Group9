@@ -1,0 +1,71 @@
+﻿<h2>Profile</h2>
+
+<div id="protectedContent" class="hidden">
+    <div class="card">
+        <label>First name</label>
+        <input type="text" id="firstName" />
+
+        <label>Last name</label>
+        <input type="text" id="lastName" />
+
+        <label>Email</label>
+        <input type="email" id="email" disabled />
+
+        <label>Phone</label>
+        <input type="text" id="phone" />
+
+        <button onclick="updateProfile()">Cập nhật profile</button>
+
+        <div id="message"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        initProfilePage();
+
+        async function initProfilePage() {
+            const canAccess = await requireAuthPage();
+
+            if (!canAccess) {
+                return;
+            }
+
+            document.getElementById("protectedContent").classList.remove("hidden");
+
+            const result = await apiGetAuth("/api/auth/me");
+
+            if (!result.ok) {
+                clearAuthStorage();
+                window.location.href = "/auth-ui/login";
+                return;
+            }
+
+            const user = result.data;
+
+            document.getElementById("firstName").value = user.firstName || "";
+            document.getElementById("lastName").value = user.lastName || "";
+            document.getElementById("email").value = user.email || "";
+            document.getElementById("phone").value = user.phone || "";
+        }
+
+        async function updateProfile() {
+            const firstName = document.getElementById("firstName").value;
+            const lastName = document.getElementById("lastName").value;
+            const phone = document.getElementById("phone").value;
+
+            const result = await apiPutAuth("/api/auth/profile", {
+                firstName,
+                lastName,
+                phone
+            });
+
+            if (!result.ok) {
+                showMessage(result);
+                return;
+            }
+
+            showSuccess("Cập nhật profile thành công.");
+        }
+    </script>
+}

@@ -1,0 +1,193 @@
+﻿<h2>Cloud Upload - Cloudinary</h2>
+
+<div id="protectedContent" class="hidden">
+    <div class="card">
+        <h3>Upload file</h3>
+
+        <input type="file" id="fileInput" />
+
+        <button onclick="uploadFile()">Upload</button>
+
+        <div class="progress-wrapper">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <p id="uploadStatus">Chưa upload</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Danh sách file của tôi</h3>
+
+        <button onclick="loadFiles()">Refresh</button>
+
+        <table class="file-table">
+            <thead>
+                <tr>
+                    <th>Tên file</th>
+                    <th>Loại</th>
+                    <th>Dung lượng</th>
+                    <th>Trạng thái</th>
+                    <th>Preview</th>
+                </tr>
+            </thead>
+            <tbody id="fileTableBody">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Preview</h3>
+        <div id="previewBox">
+            Chưa chọn file.
+        </div>
+    </div>
+</div>
+
+<div id="message"></div>
+
+@section Scripts {
+    <script>
+        initFilesPage();
+
+        async function initFilesPage() {
+            const canAccess = await requireAuthPage();
+
+            if (!canAccess) {
+                return;
+            }
+
+            document.getElementById("protectedContent").classList.remove("hidden");
+
+            await loadFiles();
+        }
+
+        function uploadFile() {
+            const fileInput = document.getElementById("fileInput");
+            const file = fileInput.files[0];
+
+            if (!file) {
+                document.getElementById("uploadStatus").innerText = "Vui lòng chọn file.";
+                return;
+            }
+
+            const token = localStorage.getItem("accessToken");
+
+            if (!token) {
+                window.location.href = "/auth-ui/login";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.open("POST", "/api/files/upload", true);
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+
+            xhr.upload.onprogress = function (event) {
+                if (event.lengthComputable) {
+                    const percent = Math.round((event.loaded / event.total) * 100);
+                    document.getElementById("progressFill").style.width = percent + "%";
+                    document.getElementById("uploadStatus").innerText = "Đang upload: " + percent + "%";
+                }
+            };
+
+            xhr.onload = async function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    document.getElementById("progressFill").style.width = "100%";
+                    document.getElementById("uploadStatus").innerText = "Upload thành công.";
+                    await loadFiles();
+                } else {
+                    let message = "Upload thất bại.";
+
+                    try {
+                        const error = JSON.parse(xhr.responseText);
+                        message = error.message || message;
+                    } catch { }
+
+                    document.getElementById("uploadStatus").innerText = message;
+                }
+            };
+
+            xhr.onerror = function () {
+                document.getElementById("uploadStatus").innerText = "Lỗi kết nối khi upload.";
+            };
+
+            document.getElementById("progressFill").style.width = "0%";
+            document.getElementById("uploadStatus").innerText = "Bắt đầu upload...";
+
+            xhr.send(formData);
+        }
+
+        async function loadFiles() {
+            const result = await apiGetAuth("/api/files/my-files");
+
+            if (!result.ok) {
+                showMessage(result);
+                return;
+            }
+
+            const tbody = document.getElementById("fileTableBody");
+            tbody.innerHTML = "";
+
+            result.data.forEach(file => {
+                const tr = document.createElement("tr");
+
+                tr.innerHTML = `
+                    <td>${file.originalFileName}</td>
+                    <td>${file.contentType}</td>
+                    <td>${formatFileSize(file.size)}</td>
+                    <td>${file.status}</td>
+                    <td>
+                        <button onclick="previewFile(${file.id})">Preview</button>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function previewFile(id) {
+            const result = await apiGetAuth(`/api/files/${id}/preview-url`);
+
+            if (!result.ok) {
+                showMessage(result);
+                return;
+            }
+
+            const file = result.data;
+            const previewBox = document.getElementById("previewBox");
+
+            if (file.contentType.startsWith("image/")) {
+                previewBox.innerHTML = `
+                    <p><b>${file.fileName}</b></p>
+                    <img src="${file.previewUrl}" class="preview-image" />
+                `;
+            } else if (file.contentType === "application/pdf") {
+                previewBox.innerHTML = `
+                    <p><b>${file.fileName}</b></p>
+                    <iframe src="${file.previewUrl}" class="preview-frame"></iframe>
+                `;
+            } else {
+                previewBox.innerHTML = `
+                    <p><b>${file.fileName}</b></p>
+                    <a href="${file.previewUrl}" target="_blank">Mở / tải file</a>
+                `;
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) {
+                return bytes + " B";
+            }
+
+            if (bytes < 1024 * 1024) {
+                return (bytes / 1024).toFixed(2) + " KB";
+            }
+
+            return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+        }
+    </script>
+}

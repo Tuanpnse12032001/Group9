@@ -1,0 +1,55 @@
+﻿<h2>Đăng ký</h2>
+
+<div class="card">
+    <label>First name</label>
+    <input type="text" id="firstName" placeholder="First name" />
+
+    <label>Last name</label>
+    <input type="text" id="lastName" placeholder="Last name" />
+
+    <label>Email</label>
+    <input type="email" id="email" placeholder="Email" />
+
+    <label>Phone</label>
+    <input type="text" id="phone" placeholder="Phone" />
+
+    <label>Password</label>
+    <input type="password" id="password" placeholder="Password" />
+
+    <button onclick="register()">Register</button>
+
+    <div id="message"></div>
+</div>
+
+@section Scripts {
+    <script>
+        requireGuestPage();
+
+        async function register() {
+            const firstName = document.getElementById("firstName").value;
+            const lastName = document.getElementById("lastName").value;
+            const email = document.getElementById("email").value;
+            const phone = document.getElementById("phone").value;
+            const password = document.getElementById("password").value;
+
+            const result = await apiPost("/api/auth/register", {
+                firstName,
+                lastName,
+                email,
+                phone,
+                password
+            });
+
+            if (!result.ok) {
+                showMessage(result);
+                return;
+            }
+
+            showSuccess("Đăng ký thành công. Đang chuyển sang trang login...");
+
+            setTimeout(() => {
+                window.location.href = "/auth-ui/login";
+            }, 1000);
+        }
+    </script>
+}

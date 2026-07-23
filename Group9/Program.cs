@@ -10,7 +10,10 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+// Thêm MVC View để chạy front-end Razor View
+builder.Services.AddControllersWithViews();
+
+// Giữ lại Razor Pages nếu project đang dùng
 builder.Services.AddRazorPages();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -109,13 +112,25 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Cho phép load file tĩnh trong wwwroot: css, js, image...
 app.UseStaticFiles();
 
-app.UseAuthentication();
+app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
+// API Controller
 app.MapControllers();
+
+// Route cho front-end Razor View
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=AuthPage}/{action=Login}/{id?}"
+);
+
+// Razor Pages nếu project đang dùng
 app.MapRazorPages();
 
 app.Run();

@@ -1,0 +1,172 @@
+﻿* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.navbar {
+    height: 60px;
+    background: #111827;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+}
+
+.brand {
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    margin-left: 18px;
+    font-size: 15px;
+}
+
+    .nav-links a:hover {
+        text-decoration: underline;
+    }
+
+.container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+label {
+    display: block;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+input,
+textarea {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: Arial, sans-serif;
+}
+
+textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+button {
+    margin-top: 18px;
+    padding: 11px 18px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+    button:hover {
+        background: #1d4ed8;
+    }
+
+.message {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.hidden {
+    display: none;
+}
+
+.form-link {
+    margin-top: 10px;
+    margin-bottom: 6px;
+}
+
+    .form-link a {
+        color: #2563eb;
+        text-decoration: none;
+        font-size: 14px;
+    }
+
+        .form-link a:hover {
+            text-decoration: underline;
+        }
+
+
+
+.progress-wrapper {
+    margin-top: 16px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 18px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    width: 0%;
+    height: 100%;
+    background: #2563eb;
+    transition: width 0.2s ease;
+}
+
+.file-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+}
+
+    .file-table th,
+    .file-table td {
+        border: 1px solid #e5e7eb;
+        padding: 10px;
+        text-align: left;
+    }
+
+    .file-table th {
+        background: #f3f4f6;
+    }
+
+.preview-image {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.preview-frame {
+    width: 100%;
+    height: 600px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
